@@ -1,0 +1,167 @@
+НQ-R
+Apt install frr
+Apt install isc-dhcp-server
+Apt install radvd
+Apt install network-namager
+Apt install iperf3
+apt install iptables-persistent
+HQ-ISR 10.0.10.1/30 2001::10:1/126
+HQ-SRV 192.168.20.1/28 2001::2:1/124
+hostnamectl set-hosname HQ-R
+nano /etc/frr/daemons
+systemctl restart ffr.servise
+vtysh
+conf t
+router ospf
+ospf router-id 1.1.1.1
+network 10.0.10.0/30 area 0
+network 192.168.10.0/26 area 1
+router ospf6 
+ospf router-id 0.0.0.1
+ospf6 0.0.0.0 range 2001::10:0/126
+ospf6 0.0.0.0 range 2001::1:0/122
+int ens224 
+ipv6 ospf area 0.0.0.0
+int ens256
+ipv6 ospf area 0.0.0.0
+nano /etc/sysctl.conf
+nano /etc/radvd.conf
+inetface ens224
+{
+MinRtrAdvInterval 3;
+MaxRtrAdvInterval 60;
+AdvSendAdvert on;
+};
+systemctl stop radvd
+systemctl start radvd
+systemctl enable radvd
+adduser admin/network_admin
+iperf3 -c 10.0.10.1 -i1 -t20
+mkdir /mnt/backup
+touch /etc/backup.sh
+nano /etc/backup.sh
+#!/bin/bash
+backup_files="/home /etc /root /boot /opt"
+dest="/mnt/backup"
+archive_file="backup.tgz"
+echo "Backing up $backup_files to $dest/$archive_file"
+tar czf $dest/$archive_file $backup_files
+echo "backup finished"
+LS -lh $dest
+/bash /etc/backup.sh
+tar -xvpzf /mnt/backup/backup.tgz -C / --numeric-owner
+Настройка DHCP
+nano /etc/default/isc-dhcp-server
+Interfacesv4="ens* ens*"
+Interfacesv6="ens* ens*"
+nano /etc/dhcp/dhcpd.conf
+default-lease-time 600;
+max-lease-time 7200;
+#ddns-updates on;
+#ddns-update-style interim;
+autoritative;
+nano /etc/default/isc-dhcp-server
+раскомментить все v4 и если по задание необходимо и v6
+изменить так же нужно: DHCPv4_PID=/var/run/dhclient.ens192.pid(192 если этот int интернет)
+subnet 192.168.10.0 netmask 255.255.255.252 {
+ range 192.168.10.3 192.168.10.60;
+ option routers 192.168.10.1;
+# option domain-name "hq.work";
+# option domain-name-servers 192.168.2.2;
+nano /etc/dhcp/dhcpd6.conf
+default-lease-time 2592000;
+preferred-lifetime 604800;
+option dhcp-renewal-time 3600;
+option dhcp-rebinding-time 7200;
+allow leasequery;
+subnet6 2001::10:0/126 {
+	range6 2001::10:3 2001::10:3e;
+option dhcp6.name-servers 2001::10:2;
+option dhcp6.domain-search "hq.work";
+systemctl stop isc-dhcp-server
+systemctl start isc-dhcp-server
+systemctl enable isc-dhcp-server
+
+BR-R
+Apt install frr
+Apt install radvd
+Apt install network-namager
+Apt install iperf3
+BR-ISR 10.0.20.1/30 2001::20:1/126
+BR-SRV 192.168.10.1/26 2001::1:1/124
+hostnamectl set-hosname BR-R
+nano /etc/frr/daemons
+systemctl restart ffr.servise
+vtysh
+conf t
+router ospf
+ospf router-id 2.2.2.2
+network 10.0.20.0/30 area 0
+network 192.168.20.0/28 area 2
+router ospf6 
+ospf router-id 0.0.0.2
+ospf6 0.0.0.0 range 2001::20:0/126
+ospf6 0.0.0.0 range 2001::1:0/124
+int ens224 
+ipv6 ospf area 0.0.0.0
+int ens256
+ipv6 ospf area 0.0.0.0
+nano /etc/sysctl.conf
+nano /etc/radvd.conf
+inetface ens224
+{
+MinRtrAdvInterval 3;
+MaxRtrAdvInterval 60;
+AdvSendAdvert on;
+};
+systemctl stop radvd
+systemctl start radvd
+systemctl enable radvd
+adduser branch_admin/network_admin
+iperf3 -c 10.0.20.1 -i1 -t20
+mkdir /mnt/backup
+touch /etc/backup.sh
+nano /etc/backup.sh
+#!/bin/bash
+backup_files="/home /etc /root /boot /opt"
+dest="/mnt/backup"
+archive_file="backup.tgz"
+echo "Backing up $backup_files to $dest/$archive_file"
+tar czf $dest/$archive_file $backup_files
+echo "backup finished"
+LS -lh $dest
+/bash /etc/backup.sh
+tar -xvpzf /mnt/backup/backup.tgz -C / --numeric-owner
+
+ISP
+ISP-CLI 172.16.0.2/30 2001::3:2/120
+ISP-HQ 10.0.10.2/30 2001::10:2/126
+ISP-BR 10.0.10.2/30 2001::20:2/126
+hostnamectl set-hosname ISP
+nano /etc/frr/daemons
+systemctl restart ffr.servise
+vtysh
+conf t
+router ospf
+ospf router-id 3.3.3.3
+network 10.0.20.0/30 area 0
+network 10.0.10.0/30 area 0
+network 172.16.0.2/30 area 3
+router ospf6 
+ospf router-id 0.0.0.3
+ospf6 0.0.0.0 range 2001::20:0/126
+ospf6 0.0.0.0 range 2001::10:0/126
+ospf6 0.0.0.0 range 2001::3:0/120
+int ens224 
+ipv6 ospf area 0.0.0.0
+int ens256
+ipv6 ospf area 0.0.0.0
+int ens192
+ipv6 ospf area 0.0.0.0
+nano /etc/sysctl.conf
+HQ-SRV 192.168.10.2/26 2001::1:2/122
+adduser admin
+BR-SRV 192.168.20/24 2001::2:2/124
+adduser branch_admin/network_admin
+CLI 172.16.0.1/30 2001::3:1/120
+adduser admin
