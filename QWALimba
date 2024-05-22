@@ -6,7 +6,7 @@ Apt install network-namager
 Apt install iperf3
 apt install iptables-persistent
 HQ-ISR 10.0.10.1/30 2001::10:10/126
-HQ-SRV 192.168.10.1/28 2001::1:1/124
+HQ-SRV 192.168.10.1/26 2001::1:1/122
 hostnamectl set-hosname HQ-R
 nano /etc/frr/daemons
 systemctl restart ffr.servise
@@ -88,7 +88,7 @@ Apt install radvd
 Apt install network-namager
 Apt install iperf3
 BR-ISR 10.0.20.1/30 2001::20:1/126
-BR-SRV 192.168.20.1/26 2001::2:1/124
+BR-SRV 192.168.20.1/28 2001::2:1/124
 hostnamectl set-hosname BR-R
 nano /etc/frr/daemons
 systemctl restart ffr.servise
